@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { getArticles, createArticle, getArticleById, updateArticle, deleteArticle } from '../controllers/articlesController.js';
+import { checkArticleAccess } from '../middlewares/accessMiddleware.js';
 
 const router = Router();
 
-router.get('/', getArticles);
-router.post('/', createArticle);
-router.get('/:articleId', getArticleById);
-router.put('/:articleId', updateArticle);
-router.delete('/:articleId', deleteArticle);
+router.get('/', checkArticleAccess, getArticles);
+router.post('/', checkArticleAccess, createArticle);
+router.get('/:articleId', checkArticleAccess, getArticleById);
+router.put('/:articleId', checkArticleAccess, updateArticle);
+router.delete('/:articleId', checkArticleAccess, deleteArticle);
 
 export default router;
