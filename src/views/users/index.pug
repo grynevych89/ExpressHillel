@@ -1,0 +1,16 @@
+doctype html
+html(lang="uk")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Users List
+    link(rel="stylesheet" href="/css/styles.css")
+  body
+    .container
+      h1 Users
+      .card-grid
+        each user in users
+          a.card(href=`/users/${user.id}`)
+            .card-title= user.name
+            .card-subtitle= user.email
+            .card-meta Role: #{user.role}

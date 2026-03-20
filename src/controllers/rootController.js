@@ -1,5 +1,5 @@
 const getRoot = (req, res) => {
-  res.send('Get root route');
+  res.render('root/index.pug');
 };
 
 export { getRoot };
