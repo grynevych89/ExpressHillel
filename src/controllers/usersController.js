@@ -1,5 +1,7 @@
+import { users } from '../data/users.js';
+
 const getUsers = (req, res) => {
-  res.send('Get users route');
+  res.render('users/index.pug', { users });
 };
 
 const createUser = (req, res) => {
@@ -7,7 +9,9 @@ const createUser = (req, res) => {
 };
 
 const getUserById = (req, res) => {
-  res.send(`Get user by Id route: ${req.params.userId}`);
+  const user = users.find(u => u.id === Number(req.params.userId));
+  if (!user) return res.status(404).send('User not found');
+  res.render('users/detail.pug', { user });
 };
 
 const updateUser = (req, res) => {

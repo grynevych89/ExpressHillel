@@ -1,0 +1,24 @@
+doctype html
+html(lang="uk")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title= `User: ${user.name}`
+    link(rel="stylesheet" href="/css/styles.css")
+  body
+    .container
+      a.back-link(href="/users") ← Back to Users
+      .detail-card
+        h1= user.name
+        .detail-row
+          span.label ID:
+          span.value= user.id
+        .detail-row
+          span.label Email:
+          span.value= user.email
+        .detail-row
+          span.label Role:
+          span.value= user.role
+        .detail-row
+          span.label Age:
+          span.value= user.age

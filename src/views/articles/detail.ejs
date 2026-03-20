@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= article.title %></title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="/articles">← Back to Articles</a>
+    <div class="detail-card">
+      <h1><%= article.title %></h1>
+      <div class="detail-row">
+        <span class="label">ID:</span>
+        <span class="value"><%= article.id %></span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Author:</span>
+        <span class="value"><%= article.author %></span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Date:</span>
+        <span class="value"><%= article.date %></span>
+      </div>
+      <div class="article-content">
+        <p><%= article.content %></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

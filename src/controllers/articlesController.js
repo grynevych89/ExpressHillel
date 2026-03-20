@@ -1,5 +1,7 @@
+import { articles } from '../data/articles.js';
+
 const getArticles = (req, res) => {
-  res.send('Get articles route');
+  res.render('articles/index.ejs', { articles });
 };
 
 const createArticle = (req, res) => {
@@ -7,7 +9,9 @@ const createArticle = (req, res) => {
 };
 
 const getArticleById = (req, res) => {
-  res.send(`Get article by Id route: ${req.params.articleId}`);
+  const article = articles.find(a => a.id === Number(req.params.articleId));
+  if (!article) return res.status(404).send('Article not found');
+  res.render('articles/detail.ejs', { article });
 };
 
 const updateArticle = (req, res) => {

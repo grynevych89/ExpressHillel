@@ -1,0 +1,21 @@
+doctype html
+html(lang="uk")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Express Hillel
+    link(rel="stylesheet" href="/css/styles.css")
+  body
+    .container
+      .home-header
+        h1 Express Hillel
+        p Simple REST server with PUG & EJS templates
+      nav.home-nav
+        a.nav-card(href="/users")
+          .nav-card-icon 👤
+          .nav-card-title Users
+          .nav-card-desc PUG templates
+        a.nav-card(href="/articles")
+          .nav-card-icon 📄
+          .nav-card-title Articles
+          .nav-card-desc EJS templates
