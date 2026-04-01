@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { getArticles, createArticle, getArticleById, updateArticle, deleteArticle } from '../controllers/articlesController.js';
-import { checkArticleAccess } from '../middlewares/accessMiddleware.js';
+import { jwtAuth } from '../middlewares/jwtMiddleware.js';
 
 const router = Router();
 
-router.get('/', checkArticleAccess, getArticles);
-router.post('/', checkArticleAccess, createArticle);
-router.get('/:articleId', checkArticleAccess, getArticleById);
-router.put('/:articleId', checkArticleAccess, updateArticle);
-router.delete('/:articleId', checkArticleAccess, deleteArticle);
+router.get('/', getArticles);
+router.post('/', jwtAuth, createArticle);
+router.get('/:articleId', getArticleById);
+router.put('/:articleId', jwtAuth, updateArticle);
+router.delete('/:articleId', jwtAuth, deleteArticle);
 
 export default router;
