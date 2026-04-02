@@ -1,23 +1,19 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { JWT_SECRET, JWT_EXPIRES, JWT_COOKIE_NAME, JWT_COOKIE_MAX_AGE, BCRYPT_SALT_ROUNDS } from '../config.js';
-
-const registeredUsers = [];
+import { JWT_SECRET, JWT_EXPIRES, JWT_COOKIE_NAME, JWT_COOKIE_MAX_AGE } from '../config.js';
+import { findByEmail, createUser } from '../services/userService.js';
 
 const register = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required' });
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
-    if (registeredUsers.find(u => u.username === username)) {
+    if (findByEmail(email)) {
       return res.status(409).json({ error: 'User already exists' });
     }
-    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
-    const user = { id: registeredUsers.length + 1, username };
-    registeredUsers.push({ ...user, password: hashedPassword });
-
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    const user = await createUser(email, password);
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
     res.cookie(JWT_COOKIE_NAME, token, { httpOnly: true, sameSite: 'lax', maxAge: JWT_COOKIE_MAX_AGE });
     res.status(201).json({ user });
   } catch {
@@ -27,14 +23,14 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const user = registeredUsers.find(u => u.username === username);
+    const { email, password } = req.body;
+    const user = findByEmail(email);
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: 'Invalid username or password' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
     res.cookie(JWT_COOKIE_NAME, token, { httpOnly: true, sameSite: 'lax', maxAge: JWT_COOKIE_MAX_AGE });
-    res.json({ user: { id: user.id, username: user.username } });
+    res.json({ user: { id: user.id, email: user.email } });
   } catch {
     res.status(500).json({ error: 'Login failed' });
   }

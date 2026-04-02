@@ -1,11 +1,15 @@
 function toggleTheme(el) {
+  const theme = el.checked ? 'dark' : 'light';
   fetch('/theme', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ theme: el.checked ? 'dark' : 'light' })
+    body: JSON.stringify({ theme })
   })
-    .then(() => location.reload())
-    .catch(() => { el.checked = !el.checked; }); // revert toggle on failure
+    .then(res => res.json())
+    .then(data => {
+      document.documentElement.setAttribute('data-theme', data.theme);
+    })
+    .catch(() => { el.checked = !el.checked; });
 }
 
 document.querySelectorAll('.header-nav-link').forEach(link => {
@@ -40,7 +44,7 @@ async function submitAuth(e, action) {
   e.preventDefault();
   const form = e.target;
   const data = {
-    username: form.querySelector('[name="username"]').value,
+    email: form.querySelector('[name="email"]').value,
     password: form.querySelector('[name="password"]').value,
   };
   const errorEl = document.getElementById('modalError');

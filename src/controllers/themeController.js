@@ -10,6 +10,9 @@ const setTheme = (req, res) => {
   if (!ALLOWED_THEMES.includes(theme)) {
     return res.status(400).json({ error: `Invalid theme. Allowed: ${ALLOWED_THEMES.join(', ')}` });
   }
+  if (req.cookies['cookie_consent'] !== 'accepted') {
+    return res.json({ message: `Theme set to "${theme}" (not persisted, cookies not accepted)`, theme });
+  }
   res.cookie(THEME_COOKIE_NAME, theme, { maxAge: THEME_COOKIE_MAX_AGE, httpOnly: false, sameSite: 'lax' });
   res.json({ message: `Theme set to "${theme}"`, theme });
 };
