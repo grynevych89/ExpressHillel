@@ -1,12 +1,15 @@
+include ../mixins/_mixins.pug
 doctype html
-html(lang="uk")
+html(lang="en" data-theme=theme)
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title Express Hillel
+    link(rel="icon" href="/favicon.ico")
     link(rel="stylesheet" href="/css/styles.css")
   body
     .container
+      +authHeader(currentUser)
       .home-header
         h1 Express Hillel
         p Simple REST server with PUG & EJS templates
@@ -19,3 +22,6 @@ html(lang="uk")
           .nav-card-icon 📄
           .nav-card-title Articles
           .nav-card-desc EJS templates
+    +authModal()
+    script(src="/js/cookie-consent.js")
+    script(src="/js/auth-modal.js")

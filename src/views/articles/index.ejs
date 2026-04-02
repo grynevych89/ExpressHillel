@@ -1,23 +1,41 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="en" data-theme="<%= theme %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Articles</title>
+  <link rel="icon" href="/favicon.ico">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
   <div class="container">
+    <%- include('../partials/_authHeader.ejs') %>
+    <a class="back-link" href="/">← Back to Home</a>
     <h1>Articles</h1>
-    <div class="card-grid">
-      <% articles.forEach(article => { %>
-        <a class="card" href="/articles/<%= article.id %>">
-          <div class="card-title"><%= article.title %></div>
-          <div class="card-subtitle">By <%= article.author %></div>
-          <div class="card-meta"><%= article.date %></div>
-        </a>
-      <% }) %>
+    <div class="auth-gate-wrapper">
+      <% if (!currentUser) { %>
+        <div class="auth-gate">
+          <div class="auth-gate-card">
+            <div class="auth-gate-icon">🔒</div>
+            <p class="auth-gate-text">Members only</p>
+            <p class="auth-gate-sub">Please log in to view this content</p>
+            <button class="header-btn" onclick="openAuthModal('login', location.href)">Login</button>
+          </div>
+        </div>
+      <% } %>
+      <div class="card-grid">
+        <% articles.forEach(article => { %>
+          <a class="card" href="/articles/<%= article.id %>">
+            <div class="card-title"><%= article.title %></div>
+            <div class="card-subtitle">By <%= article.author %></div>
+            <div class="card-meta"><%= article.date %></div>
+          </a>
+        <% }) %>
+      </div>
     </div>
   </div>
+  <%- include('../partials/_authModal.ejs') %>
+  <script src="/js/cookie-consent.js"></script>
+  <script src="/js/auth-modal.js"></script>
 </body>
 </html>

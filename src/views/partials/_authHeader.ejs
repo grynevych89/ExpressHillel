@@ -1,0 +1,27 @@
+<header class="site-header">
+  <div class="header-left">
+    <a class="header-logo" href="/">Express Hillel</a>
+    <nav class="header-nav">
+      <a class="header-nav-link" href="/users">Users</a>
+      <a class="header-nav-link" href="/articles">Articles</a>
+    </nav>
+  </div>
+  <div class="header-right">
+    <div class="theme-switcher">
+      <span>☀️</span>
+      <label class="theme-toggle">
+        <input type="checkbox" <%= theme === 'dark' ? 'checked' : '' %> onchange="toggleTheme(this)">
+        <span class="theme-toggle-track"></span>
+        <span class="theme-toggle-knob"></span>
+      </label>
+      <span>🌙</span>
+    </div>
+    <% if (currentUser) { %>
+      <span class="header-username"><%= currentUser.username %></span>
+      <button class="header-btn header-btn--outline" onclick="authLogout()">Logout</button>
+    <% } else { %>
+      <button class="header-btn" onclick="openAuthModal('login')">Login</button>
+      <button class="header-btn header-btn--outline" onclick="openAuthModal('register')">Register</button>
+    <% } %>
+  </div>
+</header>

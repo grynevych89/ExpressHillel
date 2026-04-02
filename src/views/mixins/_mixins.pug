@@ -1,0 +1,47 @@
+mixin authHeader(currentUser)
+  header.site-header
+    .header-left
+      a.header-logo(href="/") Express Hillel
+      nav.header-nav
+        a.header-nav-link(href="/users") Users
+        a.header-nav-link(href="/articles") Articles
+    .header-right
+      .theme-switcher
+        span ☀️
+        label.theme-toggle
+          input(type="checkbox" checked=theme === 'dark' onchange="toggleTheme(this)")
+          span.theme-toggle-track
+          span.theme-toggle-knob
+        span 🌙
+      if currentUser
+        span.header-username= currentUser.username
+        button.header-btn.header-btn--outline(onclick="authLogout()") Logout
+      else
+        button.header-btn(onclick="openAuthModal('login')") Login
+        button.header-btn.header-btn--outline(onclick="openAuthModal('register')") Register
+
+mixin authModal()
+  .modal-overlay(id="authModal" onclick="closeAuthModal(event)")
+    .modal
+      .modal-tabs
+        button.modal-tab(id="tabLogin" onclick="switchTab('login')") Login
+        button.modal-tab(id="tabRegister" onclick="switchTab('register')") Register
+      .modal-error(id="modalError")
+      .modal-body(id="formLogin")
+        form(onsubmit="submitAuth(event,'login')")
+          .form-group
+            label(for="loginUsername") Username
+            input#loginUsername(type="text" name="username" placeholder="Enter username" required autofocus)
+          .form-group
+            label(for="loginPassword") Password
+            input#loginPassword(type="password" name="password" placeholder="Enter password" required)
+          button.auth-submit(type="submit") Login
+      .modal-body(id="formRegister" style="display:none")
+        form(onsubmit="submitAuth(event,'register')")
+          .form-group
+            label(for="regUsername") Username
+            input#regUsername(type="text" name="username" placeholder="Choose a username" required)
+          .form-group
+            label(for="regPassword") Password
+            input#regPassword(type="password" name="password" placeholder="Choose a password" required)
+          button.auth-submit(type="submit") Register

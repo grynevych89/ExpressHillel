@@ -1,0 +1,20 @@
+include mixins/_mixins.pug
+doctype html
+html(lang="en" data-theme=theme)
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title 404 — Not Found
+    link(rel="icon" href="/favicon.ico")
+    link(rel="stylesheet" href="/css/styles.css")
+  body
+    .container
+      +authHeader(currentUser)
+      .not-found
+        .not-found-code 404
+        h1.not-found-title Page not found
+        p.not-found-sub The page you're looking for doesn't exist or has been moved.
+        a.header-btn(href="/") Go Home
+    +authModal()
+    script(src="/js/cookie-consent.js")
+    script(src="/js/auth-modal.js")

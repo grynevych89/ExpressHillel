@@ -1,16 +1,31 @@
+include ../mixins/_mixins.pug
 doctype html
-html(lang="uk")
+html(lang="en" data-theme=theme)
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title Users List
+    link(rel="icon" href="/favicon.ico")
     link(rel="stylesheet" href="/css/styles.css")
   body
     .container
+      +authHeader(currentUser)
+      a.back-link(href="/") ← Back to Home
       h1 Users
-      .card-grid
-        each user in users
-          a.card(href=`/users/${user.id}`)
-            .card-title= user.name
-            .card-subtitle= user.email
-            .card-meta Role: #{user.role}
+      .auth-gate-wrapper
+        if !currentUser
+          .auth-gate
+            .auth-gate-card
+              .auth-gate-icon 🔒
+              p.auth-gate-text Members only
+              p.auth-gate-sub Please log in to view this content
+              button.header-btn(onclick="openAuthModal('login', location.href)") Login
+        .card-grid
+          each user in users
+            a.card(href=`/users/${user.id}`)
+              .card-title= user.name
+              .card-subtitle= user.email
+              .card-meta Role: #{user.role}
+    +authModal()
+    script(src="/js/cookie-consent.js")
+    script(src="/js/auth-modal.js")

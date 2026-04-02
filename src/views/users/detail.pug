@@ -1,24 +1,38 @@
+include ../mixins/_mixins.pug
 doctype html
-html(lang="uk")
+html(lang="en" data-theme=theme)
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title= `User: ${user.name}`
+    link(rel="icon" href="/favicon.ico")
     link(rel="stylesheet" href="/css/styles.css")
   body
     .container
+      +authHeader(currentUser)
       a.back-link(href="/users") ← Back to Users
-      .detail-card
-        h1= user.name
-        .detail-row
-          span.label ID:
-          span.value= user.id
-        .detail-row
-          span.label Email:
-          span.value= user.email
-        .detail-row
-          span.label Role:
-          span.value= user.role
-        .detail-row
-          span.label Age:
-          span.value= user.age
+      .auth-gate-wrapper
+        if !currentUser
+          .auth-gate
+            .auth-gate-card
+              .auth-gate-icon 🔒
+              p.auth-gate-text Members only
+              p.auth-gate-sub Please log in to view this content
+              button.header-btn(onclick="openAuthModal('login', location.href)") Login
+        .detail-card
+          h1= user.name
+          .detail-row
+            span.label ID:
+            span.value= user.id
+          .detail-row
+            span.label Email:
+            span.value= user.email
+          .detail-row
+            span.label Role:
+            span.value= user.role
+          .detail-row
+            span.label Age:
+            span.value= user.age
+    +authModal()
+    script(src="/js/cookie-consent.js")
+    script(src="/js/auth-modal.js")

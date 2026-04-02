@@ -1,32 +1,49 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="en" data-theme="<%= theme %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= article.title %></title>
+  <link rel="icon" href="/favicon.ico">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
   <div class="container">
+    <%- include('../partials/_authHeader.ejs') %>
     <a class="back-link" href="/articles">← Back to Articles</a>
-    <div class="detail-card">
-      <h1><%= article.title %></h1>
-      <div class="detail-row">
-        <span class="label">ID:</span>
-        <span class="value"><%= article.id %></span>
-      </div>
-      <div class="detail-row">
-        <span class="label">Author:</span>
-        <span class="value"><%= article.author %></span>
-      </div>
-      <div class="detail-row">
-        <span class="label">Date:</span>
-        <span class="value"><%= article.date %></span>
-      </div>
-      <div class="article-content">
-        <p><%= article.content %></p>
+    <div class="auth-gate-wrapper">
+      <% if (!currentUser) { %>
+        <div class="auth-gate">
+          <div class="auth-gate-card">
+            <div class="auth-gate-icon">🔒</div>
+            <p class="auth-gate-text">Members only</p>
+            <p class="auth-gate-sub">Please log in to view this content</p>
+            <button class="header-btn" onclick="openAuthModal('login', location.href)">Login</button>
+          </div>
+        </div>
+      <% } %>
+      <div class="detail-card">
+        <h1><%= article.title %></h1>
+        <div class="detail-row">
+          <span class="label">ID:</span>
+          <span class="value"><%= article.id %></span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Author:</span>
+          <span class="value"><%= article.author %></span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Date:</span>
+          <span class="value"><%= article.date %></span>
+        </div>
+        <div class="article-content">
+          <p><%= article.content %></p>
+        </div>
       </div>
     </div>
   </div>
+  <%- include('../partials/_authModal.ejs') %>
+  <script src="/js/cookie-consent.js"></script>
+  <script src="/js/auth-modal.js"></script>
 </body>
 </html>
