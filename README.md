@@ -1,18 +1,19 @@
 # Express Hillel — Homework
 
-REST API server built with Node.js + Express.js using MVC architecture, server-side rendering, session-based and JWT authentication via Passport.js.
+REST API server built with Node.js + Express.js using MVC architecture, server-side rendering, session-based and JWT authentication via Passport.js, and MongoDB Atlas for data persistence.
 
 ## Technologies
 
 - Node.js + Express.js 5
 - ES Modules
-- PUG (templates for `/`, `/users`)
+- PUG (templates for `/`, `/authors`)
 - EJS (templates for `/articles`)
 - Passport.js + passport-local
 - express-session
 - jsonwebtoken + bcrypt
 - cookie-parser
 - dotenv
+- Mongoose + MongoDB Atlas
 
 ---
 
@@ -23,6 +24,8 @@ git clone https://github.com/grynevych89/ExpressHillel.git
 cd ExpressHillel
 npm install
 cp .env.example .env
+# Fill in MONGODB_URI in .env
+npm run seed   # populate articles collection (run once)
 npm run dev
 ```
 
@@ -30,10 +33,11 @@ Server runs at `http://localhost:3000`
 
 ## Scripts
 
-| Command       | Description                              |
-|---------------|------------------------------------------|
-| `npm start`   | Start server (production)                |
-| `npm run dev` | Start server with auto-reload on changes |
+| Command         | Description                              |
+|-----------------|------------------------------------------|
+| `npm start`     | Start server (production)                |
+| `npm run dev`   | Start server with auto-reload on changes |
+| `npm run seed`  | Seed articles collection in MongoDB      |
 
 ## Environment Variables
 
@@ -43,11 +47,17 @@ AUTH_ENABLED=true
 STATIC_PATH=public
 JWT_SECRET=your-jwt-secret
 SESSION_SECRET=your-session-secret
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?retryWrites=true&w=majority
 ```
 
 ---
 
 ## Features
+
+### MongoDB Atlas
+- Articles are stored and fetched from MongoDB Atlas
+- Users (auth) are registered and stored in MongoDB Atlas
+- Graceful error page when database is unavailable
 
 ### Theme
 - Light/dark toggle on every page
@@ -91,13 +101,13 @@ SESSION_SECRET=your-session-secret
 
 ### Pages
 
-| Method | Route                  | Description                               |
-|--------|------------------------|-------------------------------------------|
-| GET    | `/`                    | Home page                                 |
-| GET    | `/users`               | Users list                                |
-| GET    | `/users/:userId`       | User detail                               |
-| GET    | `/articles`            | Articles list                             |
-| GET    | `/articles/:articleId` | Article detail                            |
+| Method | Route                    | Description                               |
+|--------|--------------------------|-------------------------------------------|
+| GET    | `/`                      | Home page                                 |
+| GET    | `/authors`               | Authors list                              |
+| GET    | `/authors/:authorId`     | Author detail                             |
+| GET    | `/articles`              | Articles list (from MongoDB)              |
+| GET    | `/articles/:articleId`   | Article detail (from MongoDB)             |
 
 ### JWT Auth
 
@@ -127,14 +137,14 @@ SESSION_SECRET=your-session-secret
 
 ### API (JWT required when `AUTH_ENABLED=true`)
 
-| Method | Route                  | Description    |
-|--------|------------------------|----------------|
-| POST   | `/users`               | Create user    |
-| PUT    | `/users/:userId`       | Update user    |
-| DELETE | `/users/:userId`       | Delete user    |
-| POST   | `/articles`            | Create article |
-| PUT    | `/articles/:articleId` | Update article |
-| DELETE | `/articles/:articleId` | Delete article |
+| Method | Route                    | Description     |
+|--------|--------------------------|-----------------|
+| POST   | `/authors`               | Create author   |
+| PUT    | `/authors/:authorId`     | Update author   |
+| DELETE | `/authors/:authorId`     | Delete author   |
+| POST   | `/articles`              | Create article  |
+| PUT    | `/articles/:articleId`   | Update article  |
+| DELETE | `/articles/:articleId`   | Delete article  |
 
 ---
 
@@ -184,6 +194,7 @@ ExpressHillel/
 ├── src/
 │   ├── app.js
 │   ├── config.js
+│   ├── db.js
 │   ├── passportConfig.js
 │   ├── sessionConfig.js
 │   ├── controllers/
@@ -191,14 +202,15 @@ ExpressHillel/
 │   │   ├── passportAuthController.js
 │   │   ├── themeController.js
 │   │   ├── rootController.js
-│   │   ├── usersController.js
+│   │   ├── authorsController.js
 │   │   └── articlesController.js
 │   ├── data/
-│   │   ├── authUsers.js
-│   │   ├── users.js
-│   │   └── articles.js
+│   │   ├── authors.js
+│   │   └── seed.js
 │   ├── middlewares/
 │   │   ├── index.js
+│   │   ├── accessMiddleware.js
+│   │   ├── authMiddleware.js
 │   │   ├── errorHandlers.js
 │   │   ├── passportMiddleware.js
 │   │   ├── jwtMiddleware.js
@@ -206,18 +218,21 @@ ExpressHillel/
 │   │   ├── themeMiddleware.js
 │   │   ├── logRequestsMiddleware.js
 │   │   └── validateMiddleware.js
+│   ├── models/
+│   │   ├── Article.js
+│   │   └── User.js
 │   ├── routes/
 │   │   ├── index.js
 │   │   ├── authRoutes.js
 │   │   ├── themeRoutes.js
 │   │   ├── rootRoutes.js
-│   │   ├── usersRoutes.js
+│   │   ├── authorsRoutes.js
 │   │   └── articlesRoutes.js
 │   ├── services/
 │   │   └── userService.js
 │   └── views/
 │       ├── root/index.pug
-│       ├── users/
+│       ├── authors/
 │       │   ├── index.pug
 │       │   └── detail.pug
 │       ├── articles/
@@ -227,6 +242,7 @@ ExpressHillel/
 │       ├── partials/
 │       │   ├── _authHeader.ejs
 │       │   └── _authModal.ejs
+│       ├── error.ejs
 │       └── 404.pug
 ├── server.js
 ├── .env

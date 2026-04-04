@@ -1,14 +1,15 @@
 import bcrypt from 'bcrypt';
-import authUsers from '../data/authUsers.js';
+import User from '../models/User.js';
 import { BCRYPT_SALT_ROUNDS } from '../config.js';
 
-const findByEmail = (email) => authUsers.find(u => u.email === email);
+const findByEmail = (email) => User.findOne({ email });
+
+const findById = (id) => User.findById(id);
 
 const createUser = async (email, password) => {
   const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
-  const user = { id: authUsers.length + 1, email };
-  authUsers.push({ ...user, password: hashedPassword });
-  return user;
+  const user = await User.create({ email, password: hashedPassword });
+  return { id: user._id, email: user.email };
 };
 
-export { findByEmail, createUser };
+export { findByEmail, findById, createUser };

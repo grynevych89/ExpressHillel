@@ -1,13 +1,13 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcrypt';
-import authUsers from './data/authUsers.js';
+import { findByEmail, findById } from './services/userService.js';
 
 const configurePassport = () => {
   passport.use(
     new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
       try {
-        const user = authUsers.find(u => u.email === email);
+        const user = await findByEmail(email);
         if (!user) {
           return done(null, false, { message: 'Invalid email or password' });
         }
@@ -15,7 +15,7 @@ const configurePassport = () => {
         if (!isMatch) {
           return done(null, false, { message: 'Invalid email or password' });
         }
-        return done(null, { id: user.id, email: user.email });
+        return done(null, { id: user._id, email: user.email });
       } catch (err) {
         return done(err);
       }
@@ -26,11 +26,11 @@ const configurePassport = () => {
     done(null, user.id);
   });
 
-  passport.deserializeUser((id, done) => {
+  passport.deserializeUser(async (id, done) => {
     try {
-      const user = authUsers.find(u => u.id === id);
+      const user = await findById(id);
       if (!user) return done(null, false);
-      done(null, { id: user.id, email: user.email });
+      done(null, { id: user._id, email: user.email });
     } catch (err) {
       done(err);
     }

@@ -7,7 +7,7 @@ const passportRegister = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
-    if (findByEmail(email)) {
+    if (await findByEmail(email)) {
       return res.status(409).json({ error: 'User already exists' });
     }
     const user = await createUser(email, password);

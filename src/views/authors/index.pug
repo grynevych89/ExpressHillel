@@ -4,14 +4,14 @@ html(lang="en" data-theme=theme)
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title Users List
+    title Authors List
     link(rel="icon" href="/favicon.ico")
     link(rel="stylesheet" href="/css/styles.css")
   body
     .container
       +authHeader(currentUser)
       a.back-link(href="/") ← Back to Home
-      h1 Users
+      h1 Authors
       .auth-gate-wrapper
         if !currentUser
           .auth-gate
@@ -21,11 +21,11 @@ html(lang="en" data-theme=theme)
               p.auth-gate-sub Please log in to view this content
               button.header-btn(onclick="openAuthModal('login', location.href)") Login
         .card-grid
-          each user in users
-            a.card(href=`/users/${user.id}`)
-              .card-title= user.name
-              .card-subtitle= user.email
-              .card-meta Role: #{user.role}
+          each author in authors
+            a.card(href=`/authors/${author.id}`)
+              .card-title= author.name
+              .card-subtitle= author.email
+              .card-meta Role: #{author.role}
     +authModal()
     script(src="/js/cookie-consent.js")
     script(src="/js/auth-modal.js")
