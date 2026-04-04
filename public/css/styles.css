@@ -647,3 +647,19 @@ h1 {
 .auth-link a:hover {
   text-decoration: underline;
 }
+
+.error-page {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.error-page h1 {
+  font-size: 2rem;
+  margin-bottom: 16px;
+  color: var(--color-error, #e53e3e);
+}
+
+.error-page p {
+  font-size: 1.1rem;
+  color: var(--color-text-muted, #666);
+}

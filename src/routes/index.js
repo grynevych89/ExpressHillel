@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import rootRoutes from './rootRoutes.js';
-import usersRoutes from './usersRoutes.js';
+import authorsRoutes from './authorsRoutes.js';
 import articlesRoutes from './articlesRoutes.js';
 import authRoutes from './authRoutes.js';
 import themeRoutes from './themeRoutes.js';
@@ -8,7 +8,7 @@ import themeRoutes from './themeRoutes.js';
 const router = Router();
 
 router.use('/', rootRoutes);
-router.use('/users', usersRoutes);
+router.use('/authors', authorsRoutes);
 router.use('/articles', articlesRoutes);
 router.use('/auth', authRoutes);
 router.use('/theme', themeRoutes);

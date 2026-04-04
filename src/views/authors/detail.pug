@@ -4,13 +4,13 @@ html(lang="en" data-theme=theme)
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title= `User: ${user.name}`
+    title= `Author: ${author.name}`
     link(rel="icon" href="/favicon.ico")
     link(rel="stylesheet" href="/css/styles.css")
   body
     .container
       +authHeader(currentUser)
-      a.back-link(href="/users") ← Back to Users
+      a.back-link(href="/authors") ← Back to Authors
       .auth-gate-wrapper
         if !currentUser
           .auth-gate
@@ -20,19 +20,19 @@ html(lang="en" data-theme=theme)
               p.auth-gate-sub Please log in to view this content
               button.header-btn(onclick="openAuthModal('login', location.href)") Login
         .detail-card
-          h1= user.name
+          h1= author.name
           .detail-row
             span.label ID:
-            span.value= user.id
+            span.value= author.id
           .detail-row
             span.label Email:
-            span.value= user.email
+            span.value= author.email
           .detail-row
             span.label Role:
-            span.value= user.role
+            span.value= author.role
           .detail-row
             span.label Age:
-            span.value= user.age
+            span.value= author.age
     +authModal()
     script(src="/js/cookie-consent.js")
     script(src="/js/auth-modal.js")

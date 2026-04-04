@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="<%= theme %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <%- include('./partials/_authHeader.ejs') %>
+    <a class="back-link" href="/">← Back to Home</a>
+    <div class="error-page">
+      <h1>Something went wrong</h1>
+      <p><%= message %></p>
+    </div>
+  </div>
+  <%- include('./partials/_authModal.ejs') %>
+  <script src="/js/cookie-consent.js"></script>
+  <script src="/js/auth-modal.js"></script>
+</body>
+</html>
