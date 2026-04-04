@@ -2,6 +2,11 @@ import jwt from 'jsonwebtoken';
 import { JWT_SECRET, JWT_COOKIE_NAME } from '../config.js';
 
 const currentUserMiddleware = (req, res, next) => {
+  if (req.user) {
+    res.locals.currentUser = req.user;
+    return next();
+  }
+
   const token = req.cookies?.[JWT_COOKIE_NAME];
   if (token) {
     try {

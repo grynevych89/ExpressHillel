@@ -14,7 +14,7 @@ mixin authHeader(currentUser)
           span.theme-toggle-knob
         span 🌙
       if currentUser
-        span.header-username= currentUser.username
+        span.header-username= currentUser.email
         button.header-btn.header-btn--outline(onclick="authLogout()") Logout
       else
         button.header-btn(onclick="openAuthModal('login')") Login
@@ -30,8 +30,8 @@ mixin authModal()
       .modal-body(id="formLogin")
         form(onsubmit="submitAuth(event,'login')")
           .form-group
-            label(for="loginUsername") Username
-            input#loginUsername(type="text" name="username" placeholder="Enter username" required autofocus)
+            label(for="loginEmail") Email
+            input#loginEmail(type="email" name="email" placeholder="Enter email" required autofocus)
           .form-group
             label(for="loginPassword") Password
             input#loginPassword(type="password" name="password" placeholder="Enter password" required)
@@ -39,8 +39,8 @@ mixin authModal()
       .modal-body(id="formRegister" style="display:none")
         form(onsubmit="submitAuth(event,'register')")
           .form-group
-            label(for="regUsername") Username
-            input#regUsername(type="text" name="username" placeholder="Choose a username" required)
+            label(for="regEmail") Email
+            input#regEmail(type="email" name="email" placeholder="Enter email" required)
           .form-group
             label(for="regPassword") Password
             input#regPassword(type="password" name="password" placeholder="Choose a password" required)

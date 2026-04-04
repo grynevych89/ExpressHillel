@@ -1,18 +1,18 @@
 # Express Hillel — Homework
 
-REST API server built with Node.js + Express.js using MVC architecture, middleware integration, template engines (PUG & EJS), cookie-based theme preferences, and JWT authentication.
+REST API server built with Node.js + Express.js using MVC architecture, server-side rendering, session-based and JWT authentication via Passport.js.
 
 ## Technologies
 
-- Node.js
-- Express.js 5
+- Node.js + Express.js 5
 - ES Modules
-- dotenv
-- PUG (template engine for `/`, `/users`)
-- EJS (template engine for `/articles`)
+- PUG (templates for `/`, `/users`)
+- EJS (templates for `/articles`)
+- Passport.js + passport-local
+- express-session
+- jsonwebtoken + bcrypt
 - cookie-parser
-- jsonwebtoken
-- bcrypt
+- dotenv
 
 ---
 
@@ -37,48 +37,53 @@ Server runs at `http://localhost:3000`
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and configure:
-
 ```env
 PORT=3000
-AUTH_ENABLED=false         # true — JWT required for /users and /articles mutations
-STATIC_PATH=public         # path to static files directory
-JWT_SECRET=your-secret-key # secret used to sign JWT tokens
+AUTH_ENABLED=true
+STATIC_PATH=public
+JWT_SECRET=your-jwt-secret
+SESSION_SECRET=your-session-secret
 ```
 
 ---
 
 ## Features
 
-### Favicon
-All HTML pages (PUG & EJS) include `<link rel="icon" href="/favicon.ico">`. The file is served from `public/favicon.ico`.
+### Theme
+- Light/dark toggle on every page
+- Saved in `theme` cookie via `POST /theme`
+- Only persisted if `cookie_consent=accepted`
+- Applied server-side as `data-theme` on `<html>`
 
-### Theme (Cookies)
-- A light/dark toggle is present on every page
-- Selected theme is saved in a `theme` cookie (30-day expiry) via `POST /theme`
-- Theme is read server-side and applied as `data-theme` attribute on `<html>`
-- Cookie consent banner is shown on first visit with Accept / Decline options
+### Cookie Consent
+- Banner shown on first visit
+- Accept — enables cookie persistence
+- Decline — removes `theme` and `token` cookies, blocks future persistence
 
 ### JWT Authentication
-- `POST /auth/register` — creates a user, hashes password with bcrypt, returns JWT in httpOnly cookie
-- `POST /auth/login` — verifies credentials, returns JWT in httpOnly cookie
-- `POST /auth/logout` — clears the JWT cookie
-- `GET /auth/me` — returns current user (requires valid JWT)
-- Protected routes check for JWT in cookie or `Authorization: Bearer` header
-- When `AUTH_ENABLED=true` and no token is present, pages show a blurred overlay with a login prompt
+- Register/login sets a JWT in an httpOnly cookie
+- `jwtMiddleware` validates token from cookie or `Authorization: Bearer` header
+
+### Passport Authentication
+- Local strategy using email + password
+- Sessions stored server-side via `express-session`
+- Session ID stored in httpOnly `connect.sid` cookie
+- `passportAuth` middleware protects session-based routes
 
 ---
 
 ## Middlewares
 
-| Middleware                | Applied to          | Description                                          |
-|---------------------------|---------------------|------------------------------------------------------|
-| `logRequestsMiddleware`   | All routes (global) | Logs method, URL, and timestamp of every request     |
-| `cookieParser`            | All routes (global) | Parses cookies from requests                         |
-| `themeMiddleware`         | All routes (global) | Reads `theme` cookie, sets `res.locals.theme`        |
-| `currentUserMiddleware`   | All routes (global) | Decodes JWT cookie, sets `res.locals.currentUser`    |
-| `jwtMiddleware`           | Protected mutations | Verifies JWT, returns 401 if missing or invalid      |
-| `validateUserInput`       | `POST /users`       | Checks for `username` and `password` in body         |
+| Middleware              | Description                                          |
+|-------------------------|------------------------------------------------------|
+| `themeMiddleware`       | Reads `theme` cookie, sets `res.locals.theme`        |
+| `currentUserMiddleware` | Sets `res.locals.currentUser` from session or JWT    |
+| `logRequestsMiddleware` | Logs method, URL, and timestamp of every request     |
+| `jwtMiddleware`         | Validates JWT, returns 401 if missing or invalid     |
+| `passportAuth`          | Checks `req.isAuthenticated()`, returns 401 if not   |
+| `validateUserInput`     | Validates email and password presence in body        |
+| `notFound`              | 404 handler — renders `404.pug`                      |
+| `badRequest`            | 400 handler — catches invalid request body errors    |
 
 ---
 
@@ -86,40 +91,50 @@ All HTML pages (PUG & EJS) include `<link rel="icon" href="/favicon.ico">`. The 
 
 ### Pages
 
-| Method | Route                  | Auth required | Description                                    |
-|--------|------------------------|---------------|------------------------------------------------|
-| GET    | `/`                    | —             | Home page                                      |
-| GET    | `/users`               | —             | Users list (blurred if not logged in)          |
-| GET    | `/users/:userId`       | —             | User detail (blurred if not logged in)         |
-| GET    | `/articles`            | —             | Articles list (blurred if not logged in)       |
-| GET    | `/articles/:articleId` | —             | Article detail (blurred if not logged in)      |
+| Method | Route                  | Description                               |
+|--------|------------------------|-------------------------------------------|
+| GET    | `/`                    | Home page                                 |
+| GET    | `/users`               | Users list                                |
+| GET    | `/users/:userId`       | User detail                               |
+| GET    | `/articles`            | Articles list                             |
+| GET    | `/articles/:articleId` | Article detail                            |
 
-### Auth
+### JWT Auth
 
-| Method | Route            | Description                                   |
-|--------|------------------|-----------------------------------------------|
-| POST   | `/auth/register` | Register, hash password, set JWT cookie       |
-| POST   | `/auth/login`    | Login, verify password, set JWT cookie        |
-| POST   | `/auth/logout`   | Clear JWT cookie                              |
-| GET    | `/auth/me`       | Return current user (JWT required)            |
+| Method | Route            | Description                              |
+|--------|------------------|------------------------------------------|
+| POST   | `/auth/register` | Register, hash password, set JWT cookie  |
+| POST   | `/auth/login`    | Login, verify password, set JWT cookie   |
+| POST   | `/auth/logout`   | Clear JWT cookie                         |
+| GET    | `/auth/me`       | Return current user (JWT required)       |
+
+### Passport Auth
+
+| Method | Route                     | Description                                  |
+|--------|---------------------------|----------------------------------------------|
+| POST   | `/auth/passport/register` | Register and auto-login via session          |
+| POST   | `/auth/passport/login`    | Login via Passport local strategy            |
+| POST   | `/auth/passport/logout`   | Destroy session, clear session cookie        |
+| GET    | `/auth/passport/me`       | Return current user (session required)       |
+| GET    | `/protected`              | Protected route (session required)           |
 
 ### Theme
 
-| Method | Route    | Description                          |
-|--------|----------|--------------------------------------|
-| GET    | `/theme` | Return current theme from cookie     |
-| POST   | `/theme` | Save theme to cookie (light / dark)  |
+| Method | Route    | Description                         |
+|--------|----------|-------------------------------------|
+| GET    | `/theme` | Return current theme from cookie    |
+| POST   | `/theme` | Save theme to cookie (light / dark) |
 
 ### API (JWT required when `AUTH_ENABLED=true`)
 
-| Method | Route                  | Description      |
-|--------|------------------------|------------------|
-| POST   | `/users`               | Create user      |
-| PUT    | `/users/:userId`       | Update user      |
-| DELETE | `/users/:userId`       | Delete user      |
-| POST   | `/articles`            | Create article   |
-| PUT    | `/articles/:articleId` | Update article   |
-| DELETE | `/articles/:articleId` | Delete article   |
+| Method | Route                  | Description    |
+|--------|------------------------|----------------|
+| POST   | `/users`               | Create user    |
+| PUT    | `/users/:userId`       | Update user    |
+| DELETE | `/users/:userId`       | Delete user    |
+| POST   | `/articles`            | Create article |
+| PUT    | `/articles/:articleId` | Update article |
+| DELETE | `/articles/:articleId` | Delete article |
 
 ---
 
@@ -127,27 +142,31 @@ All HTML pages (PUG & EJS) include `<link rel="icon" href="/favicon.ico">`. The 
 
 Base URL: `http://localhost:3000`
 
-### Register & Login
+### JWT Register & Login
 ```
 POST /auth/register
-Body (JSON): { "username": "alice", "password": "secret123" }
-
 POST /auth/login
-Body (JSON): { "username": "alice", "password": "secret123" }
+Body (JSON): { "email": "user@test.com", "password": "secret123" }
 ```
-Both return a JWT stored in an httpOnly cookie automatically.
+
+### Passport Register & Login
+```
+POST /auth/passport/register
+POST /auth/passport/login
+Body (JSON): { "email": "user@test.com", "password": "secret123" }
+```
+Session cookie (`connect.sid`) is set automatically. Use it for subsequent requests.
+
+### Protected route
+```
+GET /protected
+Cookie: connect.sid=<value>
+```
 
 ### Theme
 ```
-GET  /theme
 POST /theme
 Body (JSON): { "theme": "dark" }
-```
-
-### Protected routes (when AUTH_ENABLED=true)
-The JWT cookie is sent automatically by the browser. For Postman — copy the `token` cookie value and pass it as:
-```
-Authorization: Bearer <token>
 ```
 
 ---
@@ -157,55 +176,60 @@ Authorization: Bearer <token>
 ```
 ExpressHillel/
 ├── public/
-│   ├── css/
-│   │   └── styles.css
+│   ├── css/styles.css
 │   ├── js/
 │   │   ├── auth-modal.js
 │   │   └── cookie-consent.js
 │   └── favicon.ico
 ├── src/
-│   ├── config.js                        # shared constants (JWT, bcrypt, theme)
+│   ├── app.js
+│   ├── config.js
+│   ├── passportConfig.js
+│   ├── sessionConfig.js
 │   ├── controllers/
+│   │   ├── authController.js
+│   │   ├── passportAuthController.js
+│   │   ├── themeController.js
 │   │   ├── rootController.js
 │   │   ├── usersController.js
-│   │   ├── articlesController.js
-│   │   ├── authController.js
-│   │   └── themeController.js
+│   │   └── articlesController.js
 │   ├── data/
+│   │   ├── authUsers.js
 │   │   ├── users.js
 │   │   └── articles.js
 │   ├── middlewares/
-│   │   ├── index.js                     # aggregates global middlewares
-│   │   ├── logRequestsMiddleware.js
-│   │   ├── themeMiddleware.js
-│   │   ├── currentUserMiddleware.js
+│   │   ├── index.js
+│   │   ├── errorHandlers.js
+│   │   ├── passportMiddleware.js
 │   │   ├── jwtMiddleware.js
+│   │   ├── currentUserMiddleware.js
+│   │   ├── themeMiddleware.js
+│   │   ├── logRequestsMiddleware.js
 │   │   └── validateMiddleware.js
 │   ├── routes/
-│   │   ├── index.js                     # aggregates all routes
+│   │   ├── index.js
+│   │   ├── authRoutes.js
+│   │   ├── themeRoutes.js
 │   │   ├── rootRoutes.js
 │   │   ├── usersRoutes.js
-│   │   ├── articlesRoutes.js
-│   │   ├── authRoutes.js
-│   │   └── themeRoutes.js
-│   ├── views/
-│   │   ├── root/
-│   │   │   └── index.pug
-│   │   ├── users/
-│   │   │   ├── index.pug
-│   │   │   └── detail.pug
-│   │   ├── articles/
-│   │   │   ├── index.ejs
-│   │   │   └── detail.ejs
-│   │   ├── mixins/
-│   │   │   └── _mixins.pug              # PUG mixins: authHeader, authModal
-│   │   ├── partials/
-│   │   │   ├── _authHeader.ejs
-│   │   │   └── _authModal.ejs
-│   │   └── 404.pug
-│   └── app.js
+│   │   └── articlesRoutes.js
+│   ├── services/
+│   │   └── userService.js
+│   └── views/
+│       ├── root/index.pug
+│       ├── users/
+│       │   ├── index.pug
+│       │   └── detail.pug
+│       ├── articles/
+│       │   ├── index.ejs
+│       │   └── detail.ejs
+│       ├── mixins/_mixins.pug
+│       ├── partials/
+│       │   ├── _authHeader.ejs
+│       │   └── _authModal.ejs
+│       └── 404.pug
+├── server.js
 ├── .env
 ├── .env.example
-├── server.js
 └── package.json
 ```
