@@ -11,7 +11,102 @@
   <div class="container">
     <%- include('../partials/_authHeader.ejs') %>
     <a class="back-link" href="/">← Back to Home</a>
-    <h1>Articles</h1>
+
+    <div class="page-header">
+      <h1>Articles</h1>
+      <div class="page-actions">
+        <button class="header-btn header-btn--outline" onclick="toggleAccordion('projectionPanel')">Select Fields</button>
+        <% if (currentUser) { %>
+          <button class="header-btn header-btn--outline" onclick="toggleAccordion('createPanel')">+ Add One</button>
+          <button class="header-btn header-btn--outline" onclick="toggleAccordion('bulkPanel')">+ Add Many</button>
+          <button class="header-btn header-btn--outline" id="updateModeBtn" onclick="toggleUpdateMode()">Update Many</button>
+          <button class="header-btn header-btn--outline" id="selectModeBtn" onclick="toggleSelectMode()">Select to Delete</button>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="search-bar">
+      <input class="search-input" id="searchInput" type="text" placeholder="Search articles by title..." value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>" oninput="onSearchInput(this)">
+      <button class="search-clear" id="searchClear" type="button" onclick="clearSearch()" style="display:<%= (typeof searchQuery !== 'undefined' && searchQuery) ? '' : 'none' %>">✕</button>
+    </div>
+
+    <!-- Projection -->
+    <div class="accordion-panel" id="projectionPanel">
+      <form class="projection-bar" onsubmit="applyProjection(event)">
+        <span class="projection-label">Fields:</span>
+        <div class="field-tags">
+          <label class="field-tag"><input type="checkbox" name="fields" value="title" checked> title</label>
+          <label class="field-tag"><input type="checkbox" name="fields" value="author" checked> author</label>
+          <label class="field-tag"><input type="checkbox" name="fields" value="date" checked> date</label>
+          <label class="field-tag"><input type="checkbox" name="fields" value="content" checked> content</label>
+        </div>
+        <div class="projection-divider"></div>
+        <button class="header-btn header-btn--apply" type="submit">Apply</button>
+        <button class="header-btn header-btn--outline header-btn--reset" type="button" onclick="location.href='/articles'">Reset</button>
+      </form>
+    </div>
+
+    <% if (currentUser) { %>
+      <!-- Insert One -->
+      <div class="accordion-panel" id="createPanel">
+        <form class="article-form" onsubmit="submitCreateArticle(event)">
+          <h2>Add Article</h2>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" name="title" placeholder="Title" required>
+            </div>
+            <div class="form-group">
+              <label>Author</label>
+              <input type="text" name="author" placeholder="Author" required>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" name="date" required>
+            </div>
+            <div class="form-group form-group--full">
+              <label>Content</label>
+              <textarea name="content" placeholder="Content" rows="3" required></textarea>
+            </div>
+          </div>
+          <div id="createError" class="form-error"></div>
+          <button class="header-btn" type="submit">Create Article</button>
+        </form>
+      </div>
+
+      <!-- Insert Many -->
+      <div class="accordion-panel" id="bulkPanel">
+        <form class="article-form" onsubmit="submitCreateMany(event)">
+          <h2>Add Multiple Articles (JSON)</h2>
+          <div class="form-group">
+            <div class="form-label-row">
+              <label>JSON Array</label>
+              <button class="btn-generate" type="button" onclick="fillFakeArticles()">Generate sample</button>
+            </div>
+            <textarea id="bulkTextarea" name="bulk" rows="5" placeholder='[{"title":"...","author":"...","date":"2024-01-01","content":"..."}]' required></textarea>
+          </div>
+          <div id="bulkError" class="form-error"></div>
+          <button class="header-btn" type="submit">Insert Many</button>
+        </form>
+      </div>
+
+      <!-- Update Many toolbar -->
+      <div id="updateToolbar" class="delete-toolbar" style="display:none">
+        <span class="select-hint">Edit fields directly in the cards</span>
+        <button class="header-btn header-btn--apply" onclick="saveAllUpdates()">Save All</button>
+        <button class="header-btn header-btn--outline header-btn--reset" onclick="toggleUpdateMode()">Cancel</button>
+      </div>
+
+      <!-- Delete Many toolbar (shown in select mode) -->
+      <div id="deleteToolbar" class="delete-toolbar" style="display:none">
+        <span class="select-hint">Click on articles to select them</span>
+        <span id="selectedCount">0 selected</span>
+        <button class="header-btn" style="background:var(--color-error,#e53e3e)" onclick="deleteSelected()">Delete Selected</button>
+        <button class="header-btn header-btn--outline header-btn--reset" onclick="toggleSelectMode()">Cancel</button>
+      </div>
+    <% } %>
+
     <div class="auth-gate-wrapper">
       <% if (!currentUser) { %>
         <div class="auth-gate">
@@ -23,13 +118,22 @@
           </div>
         </div>
       <% } %>
-      <div class="card-grid">
+      <div class="card-grid" id="cardGrid">
         <% articles.forEach(article => { %>
-          <a class="card" href="/articles/<%= article._id %>">
-            <div class="card-title"><%= article.title %></div>
-            <div class="card-subtitle">By <%= article.author %></div>
-            <div class="card-meta"><%= article.date %></div>
-          </a>
+          <div class="card" data-id="<%= article._id %>" onclick="onCardClick(event, this)">
+            <!-- View mode -->
+            <div class="card-view">
+              <div class="card-title"><%= article.title || '—' %></div>
+              <% if (article.author) { %><div class="card-subtitle">By <%= article.author %></div><% } %>
+              <% if (article.date) { %><div class="card-meta"><%= article.date %></div><% } %>
+            </div>
+            <!-- Edit mode -->
+            <div class="card-edit" style="display:none">
+              <input class="card-input" name="title" value="<%= article.title || '' %>" placeholder="Title">
+              <input class="card-input" name="author" value="<%= article.author || '' %>" placeholder="Author">
+              <input class="card-input" type="date" name="date" value="<%= article.date || '' %>">
+            </div>
+          </div>
         <% }) %>
       </div>
     </div>
@@ -37,5 +141,7 @@
   <%- include('../partials/_authModal.ejs') %>
   <script src="/js/cookie-consent.js"></script>
   <script src="/js/auth-modal.js"></script>
+  <script src="/js/fakeArticles.js"></script>
+  <script src="/js/articles.js"></script>
 </body>
 </html>

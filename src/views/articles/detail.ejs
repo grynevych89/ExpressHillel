@@ -22,6 +22,7 @@
           </div>
         </div>
       <% } %>
+
       <div class="detail-card">
         <h1><%= article.title %></h1>
         <div class="detail-row">
@@ -39,11 +40,73 @@
         <div class="article-content">
           <p><%= article.content %></p>
         </div>
+
+        <% if (currentUser) { %>
+          <div class="article-actions">
+            <button class="header-btn header-btn--outline" onclick="toggleForm('editForm')">Edit (updateOne)</button>
+            <button class="header-btn header-btn--outline" onclick="toggleForm('replaceForm')">Replace (replaceOne)</button>
+            <button class="header-btn" style="background:var(--color-error,#e53e3e)" onclick="deleteArticle('<%= article._id %>')">Delete</button>
+          </div>
+
+          <!-- Update One (PATCH) -->
+          <form id="editForm" class="article-form" style="display:none" onsubmit="submitUpdateOne(event, '<%= article._id %>')">
+            <h2>Edit Article (updateOne)</h2>
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" name="title" value="<%= article.title %>">
+            </div>
+            <div class="form-group">
+              <label>Author</label>
+              <input type="text" name="author" value="<%= article.author %>">
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" name="date" value="<%= article.date %>">
+            </div>
+            <div class="form-group">
+              <label>Content</label>
+              <textarea name="content" rows="4"><%= article.content %></textarea>
+            </div>
+            <div id="editError" class="form-error"></div>
+            <div class="article-actions">
+              <button class="header-btn" type="submit">Save Changes</button>
+              <button class="header-btn header-btn--outline header-btn--reset" type="button" onclick="toggleForm('editForm')">Cancel</button>
+            </div>
+          </form>
+
+          <!-- Replace One (PUT) -->
+          <form id="replaceForm" class="article-form" style="display:none" onsubmit="submitReplaceOne(event, '<%= article._id %>')">
+            <h2>Replace Article (replaceOne)</h2>
+            <p class="form-hint">Replaces the entire document. All fields are required.</p>
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" name="title" value="<%= article.title %>" required>
+            </div>
+            <div class="form-group">
+              <label>Author</label>
+              <input type="text" name="author" value="<%= article.author %>" required>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" name="date" value="<%= article.date %>" required>
+            </div>
+            <div class="form-group">
+              <label>Content</label>
+              <textarea name="content" rows="4" required><%= article.content %></textarea>
+            </div>
+            <div id="replaceError" class="form-error"></div>
+            <div class="article-actions">
+              <button class="header-btn" type="submit">Replace</button>
+              <button class="header-btn header-btn--outline header-btn--reset" type="button" onclick="toggleForm('replaceForm')">Cancel</button>
+            </div>
+          </form>
+        <% } %>
       </div>
     </div>
   </div>
   <%- include('../partials/_authModal.ejs') %>
   <script src="/js/cookie-consent.js"></script>
   <script src="/js/auth-modal.js"></script>
+  <script src="/js/articles.js"></script>
 </body>
 </html>

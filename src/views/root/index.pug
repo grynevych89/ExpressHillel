@@ -22,6 +22,30 @@ html(lang="en" data-theme=theme)
           .nav-card-icon 📄
           .nav-card-title Articles
           .nav-card-desc EJS templates
+
+      if testsRan
+        .test-results
+          .test-results-header
+            .test-results-title
+              span.test-results-icon ✅
+              h2 Server Self-Test Results
+            .test-summary(class=testsPassed === testsTotal ? 'test-summary--pass' : 'test-summary--fail')
+              span #{testsPassed}/#{testsTotal} passed
+            if testRunAt
+              .test-run-at Run at #{new Date(testRunAt).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', second: '2-digit'})}
+          ul.test-list
+            each result in testResults
+              li.test-item(class=result.passed ? 'test-item--pass' : 'test-item--fail')
+                span.test-status= result.passed ? '✓' : '✗'
+                span.test-name= result.name
+                if !result.passed && result.error
+                  span.test-error= result.error
+      else
+        .test-results.test-results--pending
+          .test-results-header
+            span.test-results-icon ⏳
+            h2 Tests pending...
+
     +authModal()
     script(src="/js/cookie-consent.js")
     script(src="/js/auth-modal.js")

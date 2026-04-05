@@ -57,18 +57,29 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 ### MongoDB Atlas
 - Articles are stored and fetched from MongoDB Atlas
 - Users (auth) are registered and stored in MongoDB Atlas
-- Graceful error page when database is unavailable
+- Graceful error page (503) when database is unavailable
+
+### Self-Test on Startup
+- When the server starts and connects to MongoDB, it automatically runs 12 tests covering all CRUD operations
+- Results are displayed on the home page (`/`) under the navigation cards
+- Test documents are created with a `__test__` prefix and deleted after each test — real data is not affected
+- Tests logged to console with ✓/✗ per test
+
+### Articles CRUD (full)
+- **Read** with projection (select which fields MongoDB returns)
+- **Insert One / Insert Many**
+- **Update One (PATCH) / Update Many / Replace One (PUT)**
+- **Delete One / Delete Many** (by selected IDs)
 
 ### Theme
 - Light/dark toggle on every page
 - Saved in `theme` cookie via `POST /theme`
 - Only persisted if `cookie_consent=accepted`
-- Applied server-side as `data-theme` on `<html>`
 
 ### Cookie Consent
 - Banner shown on first visit
 - Accept — enables cookie persistence
-- Decline — removes `theme` and `token` cookies, blocks future persistence
+- Decline — removes `theme` and `token` cookies
 
 ### JWT Authentication
 - Register/login sets a JWT in an httpOnly cookie
@@ -77,8 +88,6 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 ### Passport Authentication
 - Local strategy using email + password
 - Sessions stored server-side via `express-session`
-- Session ID stored in httpOnly `connect.sid` cookie
-- `passportAuth` middleware protects session-based routes
 
 ---
 
@@ -103,11 +112,35 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 
 | Method | Route                    | Description                               |
 |--------|--------------------------|-------------------------------------------|
-| GET    | `/`                      | Home page                                 |
-| GET    | `/authors`               | Authors list                              |
+| GET    | `/`                      | Home page + self-test results             |
+| GET    | `/authors`               | Authors list (static data)                |
 | GET    | `/authors/:authorId`     | Author detail                             |
-| GET    | `/articles`              | Articles list (from MongoDB)              |
-| GET    | `/articles/:articleId`   | Article detail (from MongoDB)             |
+| GET    | `/articles`              | Articles list from MongoDB. Supports `?search=keyword` and `?fields=title,author` |
+| GET    | `/articles/:articleId`   | Article detail from MongoDB               |
+
+### Articles API (JWT required)
+
+#### Read
+
+```
+GET /articles
+GET /articles?search=express          — partial title search (case-insensitive)
+GET /articles?fields=title,author     — projection: return only selected fields
+```
+
+---
+
+| Method | Route                  | Description                                        | Response                                              |
+|--------|------------------------|----------------------------------------------------|-------------------------------------------------------|
+| POST   | `/articles`            | Insert one. Body: `{title, author, date, content}` | `{ "article": { "_id": "...", "title": "...", ... } }` |
+| POST   | `/articles/bulk`       | Insert many. Body: array of articles               | `{ "inserted": 2, "articles": [...] }`                |
+| PATCH  | `/articles/:id`        | Update one. Body: fields to update (`$set`)        | `{ "article": { "_id": "...", "title": "...", ... } }` |
+| PATCH  | `/articles/many?author=name` | Update many by author (partial match). Body: fields to set | `{ "matched": 3, "modified": 3 }` |
+| PUT    | `/articles/:id`        | Replace one. Body: `{title, author, date, content}` (all required) | `{ "article": { ... } }` |
+| DELETE | `/articles/:id`        | Delete one                                         | `{ "message": "Article deleted", "article": { ... } }` |
+| DELETE | `/articles/many`       | Delete many. Body: `{ "ids": ["...", "..."] }`     | `{ "deleted": 2 }`                                    |
+
+---
 
 ### JWT Auth
 
@@ -120,13 +153,15 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 
 ### Passport Auth
 
-| Method | Route                     | Description                                  |
-|--------|---------------------------|----------------------------------------------|
-| POST   | `/auth/passport/register` | Register and auto-login via session          |
-| POST   | `/auth/passport/login`    | Login via Passport local strategy            |
-| POST   | `/auth/passport/logout`   | Destroy session, clear session cookie        |
-| GET    | `/auth/passport/me`       | Return current user (session required)       |
-| GET    | `/protected`              | Protected route (session required)           |
+| Method | Route                     | Description                             |
+|--------|---------------------------|-----------------------------------------|
+| POST   | `/auth/passport/register` | Register and auto-login via session     |
+| POST   | `/auth/passport/login`    | Login via Passport local strategy       |
+| POST   | `/auth/passport/logout`   | Destroy session, clear session cookie   |
+| GET    | `/auth/passport/me`       | Return current user (session required)  |
+| GET    | `/protected`              | Protected route (session required)      |
+
+---
 
 ### Theme
 
@@ -134,50 +169,6 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 |--------|----------|-------------------------------------|
 | GET    | `/theme` | Return current theme from cookie    |
 | POST   | `/theme` | Save theme to cookie (light / dark) |
-
-### API (JWT required when `AUTH_ENABLED=true`)
-
-| Method | Route                    | Description     |
-|--------|--------------------------|-----------------|
-| POST   | `/authors`               | Create author   |
-| PUT    | `/authors/:authorId`     | Update author   |
-| DELETE | `/authors/:authorId`     | Delete author   |
-| POST   | `/articles`              | Create article  |
-| PUT    | `/articles/:articleId`   | Update article  |
-| DELETE | `/articles/:articleId`   | Delete article  |
-
----
-
-## Testing with Postman
-
-Base URL: `http://localhost:3000`
-
-### JWT Register & Login
-```
-POST /auth/register
-POST /auth/login
-Body (JSON): { "email": "user@test.com", "password": "secret123" }
-```
-
-### Passport Register & Login
-```
-POST /auth/passport/register
-POST /auth/passport/login
-Body (JSON): { "email": "user@test.com", "password": "secret123" }
-```
-Session cookie (`connect.sid`) is set automatically. Use it for subsequent requests.
-
-### Protected route
-```
-GET /protected
-Cookie: connect.sid=<value>
-```
-
-### Theme
-```
-POST /theme
-Body (JSON): { "theme": "dark" }
-```
 
 ---
 
@@ -188,6 +179,8 @@ ExpressHillel/
 ├── public/
 │   ├── css/styles.css
 │   ├── js/
+│   │   ├── articles.js
+│   │   ├── fakeArticles.js
 │   │   ├── auth-modal.js
 │   │   └── cookie-consent.js
 │   └── favicon.ico
@@ -230,6 +223,8 @@ ExpressHillel/
 │   │   └── articlesRoutes.js
 │   ├── services/
 │   │   └── userService.js
+│   ├── tests/
+│   │   └── runTests.js
 │   └── views/
 │       ├── root/index.pug
 │       ├── authors/
