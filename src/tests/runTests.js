@@ -1,5 +1,6 @@
-import mongoose from 'mongoose';
 import Article from '../models/Article.js';
+import { isDbConnected } from '../db.js';
+import { buildSearchFilter, getStats } from '../services/articleService.js';
 
 const TEST_PREFIX = '__test__';
 
@@ -20,7 +21,7 @@ const runTests = async () => {
   };
 
   await test('DB connected to MongoDB Atlas', async () => {
-    if (mongoose.connection.readyState !== 1) throw new Error('Not connected');
+    if (!isDbConnected()) throw new Error('Not connected');
   });
 
   await test('Article.find() — read all', async () => {
@@ -61,7 +62,7 @@ const runTests = async () => {
     const updated = await Article.findByIdAndUpdate(
       testId,
       { $set: { title: `${TEST_PREFIX} Updated` } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!updated || updated.title !== `${TEST_PREFIX} Updated`) throw new Error('Title not updated');
   });
@@ -71,7 +72,7 @@ const runTests = async () => {
     const replaced = await Article.findByIdAndUpdate(
       testId,
       { title: `${TEST_PREFIX} Replaced`, author: 'Replaced', date: '2024-12-31', content: 'Replaced' },
-      { new: true, overwrite: true }
+      { returnDocument: 'after', overwrite: true }
     );
     if (!replaced) throw new Error('Replace returned null');
   });
@@ -105,6 +106,25 @@ const runTests = async () => {
     if (!bulkIds.length) throw new Error('No bulk articles (insert failed)');
     const result = await Article.deleteMany({ _id: { $in: bulkIds } });
     if (result.deletedCount < 1) throw new Error(`Deleted ${result.deletedCount}, expected ≥1`);
+  });
+
+  await test('Article.cursor() — iterate with for await', async () => {
+    const filter = buildSearchFilter('');
+    const cursor = Article.find(filter).cursor();
+    let count = 0;
+    for await (const doc of cursor) {
+      if (!doc._id) throw new Error('Document missing _id');
+      count++;
+    }
+    if (count < 1) throw new Error('Cursor returned no documents');
+  });
+
+  await test('Article.aggregate() — stats pipeline', async () => {
+    const stats = await getStats();
+    if (typeof stats.totalArticles !== 'number') throw new Error('totalArticles is not a number');
+    if (typeof stats.uniqueAuthors !== 'number') throw new Error('uniqueAuthors is not a number');
+    if (!Array.isArray(stats.perAuthor)) throw new Error('perAuthor is not an array');
+    if (stats.totalArticles < 1) throw new Error('No articles found in stats');
   });
 
   testResults = results;

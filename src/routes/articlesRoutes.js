@@ -4,12 +4,18 @@ import {
   createArticle, createArticles,
   updateArticle, updateArticles, replaceArticle,
   deleteArticle, deleteArticles,
+  getArticlesStream, getArticlesStats,
 } from '../controllers/articlesController.js';
 import { jwtAuth } from '../middlewares/jwtMiddleware.js';
+import { dbCheckMiddleware } from '../middlewares/dbCheckMiddleware.js';
 
 const router = Router();
 
+router.use(dbCheckMiddleware);
+
 router.get('/', getArticles);
+router.get('/stream', getArticlesStream);
+router.get('/stats', getArticlesStats);
 router.get('/:articleId', getArticleById);
 
 router.post('/bulk', jwtAuth, createArticles);

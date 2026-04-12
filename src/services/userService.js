@@ -12,4 +12,13 @@ const createUser = async (email, password) => {
   return { id: user._id, email: user.email };
 };
 
-export { findByEmail, findById, createUser };
+const registerUser = async (email, password) => {
+  if (await findByEmail(email)) {
+    const err = new Error('User already exists');
+    err.status = 409;
+    throw err;
+  }
+  return createUser(email, password);
+};
+
+export { findByEmail, findById, createUser, registerUser };
