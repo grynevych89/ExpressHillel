@@ -1,9 +1,9 @@
-const validateUserInput = (req, res, next) => {
-  const { email, password } = req.body || {};
-  if (!email || !password) {
-    return res.status(400).send('Missing required fields: email and password');
+const validateFields = (requiredFields) => (req, res, next) => {
+  const missing = requiredFields.filter((field) => !req.body?.[field]);
+  if (missing.length) {
+    return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` });
   }
   next();
 };
 
-export { validateUserInput };
+export { validateFields };

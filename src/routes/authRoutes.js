@@ -2,17 +2,20 @@ import { Router } from 'express';
 import { register, login, logout, getMe } from '../controllers/authController.js';
 import { passportRegister, passportLogout, passportGetMe } from '../controllers/passportAuthController.js';
 import { jwtAuth } from '../middlewares/jwtMiddleware.js';
+import { validateFields } from '../middlewares/validateMiddleware.js';
+
+const validateAuth = validateFields(['email', 'password']);
 import passport from 'passport';
 import { passportAuth } from '../middlewares/index.js';
 
 const router = Router();
 
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', validateAuth, register);
+router.post('/login', validateAuth, login);
 router.post('/logout', logout);
 router.get('/me', jwtAuth, getMe);
 
-router.post('/passport/register', passportRegister);
+router.post('/passport/register', validateAuth, passportRegister);
 router.post('/passport/login', (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
     if (err) return next(err);

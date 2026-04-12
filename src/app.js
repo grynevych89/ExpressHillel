@@ -7,7 +7,7 @@ import { dirname, join } from 'path';
 import passport from 'passport';
 import { configurePassport } from './passportConfig.js';
 import sessionMiddleware from './sessionConfig.js';
-import middlewares, { notFound, badRequest } from './middlewares/index.js';
+import middlewares, { notFound, handleError } from './middlewares/index.js';
 import router from './routes/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -38,6 +38,6 @@ app.use(router);
 
 // Error handlers
 app.use(notFound);
-app.use(badRequest);
+app.use(handleError);
 
 export default app;

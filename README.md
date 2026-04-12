@@ -57,13 +57,21 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 ### MongoDB Atlas
 - Articles are stored and fetched from MongoDB Atlas
 - Users (auth) are registered and stored in MongoDB Atlas
-- Graceful error page (503) when database is unavailable
+- Graceful error page (503) when database is unavailable via `dbCheckMiddleware`
 
 ### Self-Test on Startup
-- When the server starts and connects to MongoDB, it automatically runs 12 tests covering all CRUD operations
-- Results are displayed on the home page (`/`) under the navigation cards
+- When the server starts and connects to MongoDB, it automatically runs 14 tests covering all CRUD operations, cursor iteration, and aggregation pipeline
+- Results are displayed on the home page (`/`) side by side with the Articles Statistics block
 - Test documents are created with a `__test__` prefix and deleted after each test — real data is not affected
 - Tests logged to console with ✓/✗ per test
+
+### Cursors
+- `GET /articles/stream` iterates documents using a MongoDB cursor (`Model.find().cursor()`) with `for await...of` instead of loading everything into memory
+- Suitable for large collections
+
+### Aggregation
+- `GET /articles/stats` runs a multi-stage aggregation pipeline returning total articles, unique authors, average content length, and per-author breakdown sorted by article count
+- Statistics block is also rendered on the home page (`/`)
 
 ### Articles CRUD (full)
 - **Read** with projection (select which fields MongoDB returns)
@@ -84,6 +92,7 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 ### JWT Authentication
 - Register/login sets a JWT in an httpOnly cookie
 - `jwtMiddleware` validates token from cookie or `Authorization: Bearer` header
+- All JWT operations (sign, verify, set/clear cookie) encapsulated in `tokenService`
 
 ### Passport Authentication
 - Local strategy using email + password
@@ -93,16 +102,29 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 
 ## Middlewares
 
-| Middleware              | Description                                          |
-|-------------------------|------------------------------------------------------|
-| `themeMiddleware`       | Reads `theme` cookie, sets `res.locals.theme`        |
-| `currentUserMiddleware` | Sets `res.locals.currentUser` from session or JWT    |
-| `logRequestsMiddleware` | Logs method, URL, and timestamp of every request     |
-| `jwtMiddleware`         | Validates JWT, returns 401 if missing or invalid     |
-| `passportAuth`          | Checks `req.isAuthenticated()`, returns 401 if not   |
-| `validateUserInput`     | Validates email and password presence in body        |
-| `notFound`              | 404 handler — renders `404.pug`                      |
-| `badRequest`            | 400 handler — catches invalid request body errors    |
+| Middleware                    | Description                                                        |
+|-------------------------------|--------------------------------------------------------------------|
+| `themeMiddleware`             | Reads `theme` cookie, sets `res.locals.theme`                      |
+| `currentUserFromPassport`     | Sets `res.locals.currentUser` from Passport session (`req.user`)   |
+| `currentUserFromJWT`          | Sets `res.locals.currentUser` from JWT cookie (fallback)           |
+| `logRequestsMiddleware`       | Logs method, URL, and timestamp of every request                   |
+| `dbCheckMiddleware`           | Returns 503 if MongoDB is not connected; applied to all article routes |
+| `jwtMiddleware`               | Validates JWT, returns 401 if missing or invalid                   |
+| `passportAuth`                | Checks `req.isAuthenticated()`, returns 401 if not                 |
+| `validateFields(fields[])`    | Factory — validates required fields in request body, returns 400   |
+| `asyncHandler(fn)`            | Wraps async route handlers, forwards errors to `handleError`       |
+| `notFound`                    | 404 handler — renders `404.pug`                                    |
+| `handleError`                 | Central error handler — 400 for ValidationError, 500 otherwise; GET requests render `error.ejs`, all others return JSON |
+
+---
+
+## Services
+
+| Service          | Exports                                                          | Description                                            |
+|------------------|------------------------------------------------------------------|--------------------------------------------------------|
+| `userService`    | `findByEmail`, `findById`, `createUser`, `registerUser`          | User lookup, creation, and registration with duplicate check |
+| `tokenService`   | `signToken`, `verifyToken`, `setTokenCookie`, `clearTokenCookie` | All JWT operations in one place                        |
+| `articleService` | `buildRegexFilter`, `buildSearchFilter`, `getStats`              | Reusable query helpers and aggregation pipeline        |
 
 ---
 
@@ -110,17 +132,70 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 
 ### Pages
 
-| Method | Route                    | Description                               |
-|--------|--------------------------|-------------------------------------------|
-| GET    | `/`                      | Home page + self-test results             |
-| GET    | `/authors`               | Authors list (static data)                |
-| GET    | `/authors/:authorId`     | Author detail                             |
-| GET    | `/articles`              | Articles list from MongoDB. Supports `?search=keyword` and `?fields=title,author` |
-| GET    | `/articles/:articleId`   | Article detail from MongoDB               |
+| Method | Route                  | Description                                                                       |
+|--------|------------------------|-----------------------------------------------------------------------------------|
+| GET    | `/`                    | Home page — self-test results (left) + articles statistics (right)                |
+| GET    | `/authors`             | Authors list (static data)                                                        |
+| GET    | `/authors/:authorId`   | Author detail                                                                     |
+| GET    | `/articles`            | Articles list from MongoDB. Supports `?search=keyword` and `?fields=title,author` |
+| GET    | `/articles/:articleId` | Article detail from MongoDB                                                       |
+
+### Articles — Cursor & Aggregation (public)
+
+#### `GET /articles/stream`
+
+Iterates through the articles collection using a **MongoDB cursor** (`Model.find().cursor()`) with a `for await...of` loop instead of loading all documents into memory at once.
+
+Optional query parameter:
+- `?search=keyword` — filter by title (case-insensitive)
+
+**Example:**
+```
+GET /articles/stream?search=node
+```
+
+```json
+{
+  "total": 2,
+  "articles": [
+    { "_id": "...", "title": "Node.js Basics", "author": "Alice", "date": "2024-01-01", "content": "..." },
+    { "_id": "...", "title": "Node.js Advanced", "author": "Bob", "date": "2024-03-15", "content": "..." }
+  ]
+}
+```
+
+---
+
+#### `GET /articles/stats`
+
+Runs a **MongoDB aggregation pipeline** across the articles collection.
+
+Pipeline stages:
+1. `$group` by `author` — counts articles, computes average content length and latest date
+2. `$sort` by `articleCount` descending
+3. `$group` into a single summary — totals + per-author array
+4. `$project` — removes `_id`, rounds numeric values
+
+**Example:**
+```
+GET /articles/stats
+```
+
+```json
+{
+  "totalArticles": 10,
+  "uniqueAuthors": 4,
+  "avgContentLength": 174,
+  "perAuthor": [
+    { "author": "John Doe",  "articleCount": 3, "avgContentLength": 210, "latestDate": "2024-05-01" },
+    { "author": "Alex Brown", "articleCount": 2, "avgContentLength": 180, "latestDate": "2024-04-15" }
+  ]
+}
+```
+
+---
 
 ### Articles API (JWT required)
-
-#### Read
 
 ```
 GET /articles
@@ -128,17 +203,15 @@ GET /articles?search=express          — partial title search (case-insensitive
 GET /articles?fields=title,author     — projection: return only selected fields
 ```
 
----
-
-| Method | Route                  | Description                                        | Response                                              |
-|--------|------------------------|----------------------------------------------------|-------------------------------------------------------|
-| POST   | `/articles`            | Insert one. Body: `{title, author, date, content}` | `{ "article": { "_id": "...", "title": "...", ... } }` |
-| POST   | `/articles/bulk`       | Insert many. Body: array of articles               | `{ "inserted": 2, "articles": [...] }`                |
-| PATCH  | `/articles/:id`        | Update one. Body: fields to update (`$set`)        | `{ "article": { "_id": "...", "title": "...", ... } }` |
-| PATCH  | `/articles/many?author=name` | Update many by author (partial match). Body: fields to set | `{ "matched": 3, "modified": 3 }` |
-| PUT    | `/articles/:id`        | Replace one. Body: `{title, author, date, content}` (all required) | `{ "article": { ... } }` |
-| DELETE | `/articles/:id`        | Delete one                                         | `{ "message": "Article deleted", "article": { ... } }` |
-| DELETE | `/articles/many`       | Delete many. Body: `{ "ids": ["...", "..."] }`     | `{ "deleted": 2 }`                                    |
+| Method | Route                        | Description                                         | Response                                               |
+|--------|------------------------------|-----------------------------------------------------|--------------------------------------------------------|
+| POST   | `/articles`                  | Insert one. Body: `{title, author, date, content}`  | `{ "article": { "_id": "...", ... } }`                 |
+| POST   | `/articles/bulk`             | Insert many. Body: array of articles                | `{ "inserted": 2, "articles": [...] }`                 |
+| PATCH  | `/articles/:id`              | Update one. Body: fields to update (`$set`)         | `{ "article": { "_id": "...", ... } }`                 |
+| PATCH  | `/articles/many?author=name` | Update many by author (partial match)               | `{ "matched": 3, "modified": 3 }`                      |
+| PUT    | `/articles/:id`              | Replace one. Body: `{title, author, date, content}` | `{ "article": { ... } }`                               |
+| DELETE | `/articles/:id`              | Delete one                                          | `{ "message": "Article deleted", "article": { ... } }` |
+| DELETE | `/articles/many`             | Delete many. Body: `{ "ids": ["...", "..."] }`      | `{ "deleted": 2 }`                                     |
 
 ---
 
@@ -187,7 +260,7 @@ ExpressHillel/
 ├── src/
 │   ├── app.js
 │   ├── config.js
-│   ├── db.js
+│   ├── db.js                          # connectDB + isDbConnected
 │   ├── passportConfig.js
 │   ├── sessionConfig.js
 │   ├── controllers/
@@ -202,15 +275,16 @@ ExpressHillel/
 │   │   └── seed.js
 │   ├── middlewares/
 │   │   ├── index.js
-│   │   ├── accessMiddleware.js
-│   │   ├── authMiddleware.js
-│   │   ├── errorHandlers.js
+│   │   ├── asyncHandler.js            # wraps async handlers, forwards errors
+│   │   ├── dbCheckMiddleware.js       # 503 if MongoDB not connected
+│   │   ├── errorHandlers.js           # notFound, handleError, notFoundError
 │   │   ├── passportMiddleware.js
 │   │   ├── jwtMiddleware.js
-│   │   ├── currentUserMiddleware.js
+│   │   ├── currentUserFromPassportMiddleware.js
+│   │   ├── currentUserFromJWTMiddleware.js
 │   │   ├── themeMiddleware.js
 │   │   ├── logRequestsMiddleware.js
-│   │   └── validateMiddleware.js
+│   │   └── validateMiddleware.js      # validateFields(fields[]) factory
 │   ├── models/
 │   │   ├── Article.js
 │   │   └── User.js
@@ -222,9 +296,11 @@ ExpressHillel/
 │   │   ├── authorsRoutes.js
 │   │   └── articlesRoutes.js
 │   ├── services/
-│   │   └── userService.js
+│   │   ├── articleService.js          # buildRegexFilter, buildSearchFilter, getStats (aggregation)
+│   │   ├── tokenService.js            # signToken, verifyToken, setTokenCookie, clearTokenCookie
+│   │   └── userService.js             # findByEmail, createUser, registerUser
 │   ├── tests/
-│   │   └── runTests.js
+│   │   └── runTests.js                # 14 tests: CRUD + cursor + aggregation
 │   └── views/
 │       ├── root/index.pug
 │       ├── authors/
