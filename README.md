@@ -1,6 +1,6 @@
 # Express Hillel — Homework
 
-REST API server built with Node.js + Express.js using MVC architecture, server-side rendering, session-based and JWT authentication via Passport.js, and MongoDB Atlas for data persistence.
+REST API server built with Node.js + Express.js using MVC architecture, server-side rendering, session-based and JWT authentication via Passport.js, and MongoDB for data persistence. Runs locally or fully containerized via Docker Compose.
 
 ## Technologies
 
@@ -13,7 +13,8 @@ REST API server built with Node.js + Express.js using MVC architecture, server-s
 - jsonwebtoken + bcrypt
 - cookie-parser
 - dotenv
-- Mongoose + MongoDB Atlas
+- Mongoose + MongoDB Atlas / local MongoDB
+- Docker + Docker Compose
 
 ---
 
@@ -22,22 +23,40 @@ REST API server built with Node.js + Express.js using MVC architecture, server-s
 ```bash
 git clone https://github.com/grynevych89/ExpressHillel.git
 cd ExpressHillel
+```
+
+### Option A — Docker (recommended)
+
+```bash
+cp .env.example .env
+# Fill in JWT_SECRET and SESSION_SECRET in .env
+docker-compose up --build
+docker-compose exec app npm run seed   # seed local MongoDB (run once)
+```
+
+Server runs at `http://localhost:3000`. MongoDB runs in a container — no external Atlas URI needed.
+
+### Option B — Local (Node.js)
+
+```bash
 npm install
 cp .env.example .env
-# Fill in MONGODB_URI in .env
+# Fill in all variables including MONGODB_URI (Atlas or local)
 npm run seed   # populate articles collection (run once)
 npm run dev
 ```
 
-Server runs at `http://localhost:3000`
-
 ## Scripts
 
-| Command         | Description                              |
-|-----------------|------------------------------------------|
-| `npm start`     | Start server (production)                |
-| `npm run dev`   | Start server with auto-reload on changes |
-| `npm run seed`  | Seed articles collection in MongoDB      |
+| Command                               | Description                                    |
+|---------------------------------------|------------------------------------------------|
+| `npm start`                           | Start server (production)                      |
+| `npm run dev`                         | Start server with auto-reload on changes       |
+| `npm run seed`                        | Seed articles collection in MongoDB            |
+| `docker-compose up --build`           | Build images and start all containers          |
+| `docker-compose up`                   | Start containers (images already built)        |
+| `docker-compose down`                 | Stop and remove containers                     |
+| `docker-compose exec app npm run seed`| Seed MongoDB inside the running container      |
 
 ## Environment Variables
 
@@ -50,13 +69,22 @@ SESSION_SECRET=your-session-secret
 MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?retryWrites=true&w=majority
 ```
 
+> When running via Docker Compose, `MONGODB_URI` is set automatically to the local `mongo` container — only `JWT_SECRET` and `SESSION_SECRET` are required in `.env`.
+
 ---
 
 ## Features
 
-### MongoDB Atlas
-- Articles are stored and fetched from MongoDB Atlas
-- Users (auth) are registered and stored in MongoDB Atlas
+### Docker
+- Full Docker Compose setup: `app` (Express) + `mongo` (MongoDB) containers
+- `app` connects to `mongo` via `MONGODB_URI: mongodb://mongo:27017/expresshillel`
+- Code is mounted via volume (`.:/app`) — changes reflect instantly without rebuild
+- `node --watch` runs inside the container for auto-reload on file changes
+- `mongo_data` named volume persists MongoDB data between container restarts
+- `depends_on` ensures `mongo` starts before `app`
+
+### MongoDB
+- Articles and users are stored in MongoDB (Atlas or local container)
 - Graceful error page (503) when database is unavailable via `dbCheckMiddleware`
 
 ### Self-Test on Startup
@@ -316,6 +344,9 @@ ExpressHillel/
 │       ├── error.ejs
 │       └── 404.pug
 ├── server.js
+├── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
 ├── .env
 ├── .env.example
 └── package.json
