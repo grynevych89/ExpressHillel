@@ -1,0 +1,115 @@
+---> insertMany: add 10 students
+Inserted: [object Object]
+
+---> find: score > 80
+{
+  _id: ObjectId('69ddfd32ec692f3641d2f1ae'),
+  name: 'Alice Johnson',
+  subject: 'Mathematics',
+  score: 92
+}
+{
+  _id: ObjectId('69ddfd32ec692f3641d2f1b0'),
+  name: 'Carol White',
+  subject: 'Chemistry',
+  score: 84
+}
+{
+  _id: ObjectId('69ddfd32ec692f3641d2f1b2'),
+  name: 'Eva Martinez',
+  subject: 'Physics',
+  score: 81
+}
+{
+  _id: ObjectId('69ddfd32ec692f3641d2f1b4'),
+  name: 'Grace Kim',
+  subject: 'Mathematics',
+  score: 88
+}
+{
+  _id: ObjectId('69ddfd32ec692f3641d2f1b6'),
+  name: 'Irene Novak',
+  subject: 'Chemistry',
+  score: 96
+}
+
+---> updateOne: score < 85 → +5
+Matched: 1, Modified: 1
+
+---> deleteOne: lowest score
+Deleting: Frank Lee (score: 55)
+Deleted: 1
+
+---> find with projection: name + score
+{
+  name: 'Alice Johnson',
+  score: 92
+}
+{
+  name: 'Bob Smith',
+  score: 83
+}
+{
+  name: 'Carol White',
+  score: 84
+}
+{
+  name: 'David Brown',
+  score: 67
+}
+{
+  name: 'Eva Martinez',
+  score: 81
+}
+{
+  name: 'Grace Kim',
+  score: 88
+}
+{
+  name: 'Henry Adams',
+  score: 73
+}
+{
+  name: 'Irene Novak',
+  score: 96
+}
+{
+  name: 'James Carter',
+  score: 61
+}
+
+---> aggregate: average score per subject (avgScore > 75)
+{
+  count: 2,
+  subject: 'Chemistry',
+  avgScore: 90
+}
+{
+  count: 3,
+  subject: 'Physics',
+  avgScore: 79
+}
+{
+  count: 4,
+  subject: 'Mathematics',
+  avgScore: 77
+}
+
+---> explain() BEFORE index: name starts with "A"
+winningPlan stage: COLLSCAN
+totalDocsExamined: 9
+executionTimeMillis: 0ms
+
+---> createIndex: unique index on name
+Index created: name_1
+
+---> explain() AFTER index: name starts with "A"
+winningPlan stage: FETCH
+totalDocsExamined: 1
+executionTimeMillis: 1ms
+
+---> find: students where name starts with "A"
+{
+  name: 'Alice Johnson',
+  score: 92
+}

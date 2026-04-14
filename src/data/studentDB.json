@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Alice Johnson",
+    "subject": "Mathematics",
+    "score": 92
+  },
+  {
+    "name": "Bob Smith",
+    "subject": "Physics",
+    "score": 83
+  },
+  {
+    "name": "Carol White",
+    "subject": "Chemistry",
+    "score": 84
+  },
+  {
+    "name": "David Brown",
+    "subject": "Mathematics",
+    "score": 67
+  },
+  {
+    "name": "Eva Martinez",
+    "subject": "Physics",
+    "score": 81
+  },
+  {
+    "name": "Grace Kim",
+    "subject": "Mathematics",
+    "score": 88
+  },
+  {
+    "name": "Henry Adams",
+    "subject": "Physics",
+    "score": 73
+  },
+  {
+    "name": "Irene Novak",
+    "subject": "Chemistry",
+    "score": 96
+  },
+  {
+    "name": "James Carter",
+    "subject": "Mathematics",
+    "score": 61
+  }
+]

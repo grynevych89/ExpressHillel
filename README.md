@@ -300,7 +300,10 @@ ExpressHillel/
 │   │   └── articlesController.js
 │   ├── data/
 │   │   ├── authors.js
-│   │   └── seed.js
+│   │   ├── seed.js
+│   │   ├── studentDB.mongosh.js           # mongosh script: CRUD, aggregation, indexes on studentDB
+│   │   ├── studentDB.json                 # final state of assignments collection after script run
+│   │   └── studentDB.output.txt           # console output from the last script execution
 │   ├── middlewares/
 │   │   ├── index.js
 │   │   ├── asyncHandler.js            # wraps async handlers, forwards errors
