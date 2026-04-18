@@ -7,7 +7,8 @@ const signToken = (user) =>
 const verifyToken = (token) => {
   try {
     return jwt.verify(token, JWT_SECRET);
-  } catch {
+  } catch (err) {
+    console.debug('[tokenService] Token verification failed:', err.name);
     return null;
   }
 };

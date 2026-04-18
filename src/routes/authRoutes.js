@@ -1,12 +1,12 @@
 import { Router } from 'express';
+import passport from 'passport';
 import { register, login, logout, getMe } from '../controllers/authController.js';
 import { passportRegister, passportLogout, passportGetMe } from '../controllers/passportAuthController.js';
 import { jwtAuth } from '../middlewares/jwtMiddleware.js';
+import { passportAuth } from '../middlewares/index.js';
 import { validateFields } from '../middlewares/validateMiddleware.js';
 
 const validateAuth = validateFields(['email', 'password']);
-import passport from 'passport';
-import { passportAuth } from '../middlewares/index.js';
 
 const router = Router();
 

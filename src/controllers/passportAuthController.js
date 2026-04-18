@@ -1,26 +1,29 @@
-import { SESSION_COOKIE_NAME } from '../config.js';
-import { registerUser } from '../services/userService.js';
+import { SESSION_COOKIE_NAME } from "../config.js";
+import { register } from "../services/userService.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
 
-const passportRegister = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await registerUser(email, password);
+const passportRegister = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  const user = await register(email, password);
+  await new Promise((resolve, reject) => {
     req.login(user, (err) => {
-      if (err) return res.status(500).json({ error: 'Login after registration failed' });
-      res.status(201).json({ user });
+      if (err) {
+        const loginError = new Error("Login after registration failed");
+        loginError.status = 500;
+        return reject(loginError);
+      }
+      resolve();
     });
-  } catch (err) {
-    const status = err.status || 500;
-    res.status(status).json({ error: err.message });
-  }
-};
+  });
+  res.status(201).json({ user });
+});
 
 const passportLogout = (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
     req.session.destroy(() => {
       res.clearCookie(SESSION_COOKIE_NAME);
-      res.json({ message: 'Logged out' });
+      res.json({ message: "Logged out" });
     });
   });
 };

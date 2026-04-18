@@ -1161,9 +1161,40 @@ h1 {
   margin-left: auto;
 }
 
+.test-suite {
+  border-bottom: 1px solid var(--border);
+}
+
+.test-suite:last-child {
+  border-bottom: none;
+}
+
+.test-suite-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--bg-alt, rgba(0,0,0,0.03));
+}
+
+.test-suite-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--meta);
+}
+
+.test-suite-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
 .test-list {
   list-style: none;
-  padding: 8px 0;
+  padding: 4px 0;
 }
 
 .test-item {
