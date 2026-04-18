@@ -35,13 +35,19 @@ html(lang="en" data-theme=theme)
                   span #{testsPassed}/#{testsTotal} passed
                 if testRunAt
                   .test-run-at Run at #{new Date(testRunAt).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', second: '2-digit'})}
-              ul.test-list
-                each result in testResults
-                  li.test-item(class=result.passed ? 'test-item--pass' : 'test-item--fail')
-                    span.test-status= result.passed ? '✓' : '✗'
-                    span.test-name= result.name
-                    if !result.passed && result.error
-                      span.test-error= result.error
+              each suite in testSuites
+                .test-suite
+                  .test-suite-header
+                    span.test-suite-name= suite.label
+                    span.test-suite-count(class=suite.passed === suite.total ? 'test-summary--pass' : 'test-summary--fail')
+                      = `${suite.passed}/${suite.total}`
+                  ul.test-list
+                    each result in suite.results
+                      li.test-item(class=result.passed ? 'test-item--pass' : 'test-item--fail')
+                        span.test-status= result.passed ? '✓' : '✗'
+                        span.test-name= result.name
+                        if !result.passed && result.error
+                          span.test-error= result.error
           else
             .test-results.test-results--pending
               .test-results-header

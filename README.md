@@ -83,19 +83,26 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 - `mongo_data` named volume persists MongoDB data between container restarts
 - `depends_on` ensures `mongo` starts before `app`
 
-### MongoDB
-- Articles and users are stored in MongoDB (Atlas or local container)
+### MongoDB / Mongoose
+- Articles and users are stored in MongoDB via **Mongoose** models
 - Graceful error page (503) when database is unavailable via `dbCheckMiddleware`
+- Mongoose schemas include validation, indexes, static methods, instance methods, and timestamps
 
 ### Self-Test on Startup
-- When the server starts and connects to MongoDB, it automatically runs 14 tests covering all CRUD operations, cursor iteration, and aggregation pipeline
-- Results are displayed on the home page (`/`) side by side with the Articles Statistics block
-- Test documents are created with a `__test__` prefix and deleted after each test — real data is not affected
+- When the server starts and connects to MongoDB, it automatically runs **40 tests** across 4 suites
+- Results are displayed on the home page (`/`) grouped by suite with pass/fail counters
+- Test documents are created with a `__test__` prefix and deleted after each run — real data is not affected
 - Tests logged to console with ✓/✗ per test
+
+| Suite | Tests | What is covered |
+|---|---|---|
+| General | 1 | DB connection |
+| Article CRUD | 13 | find, create, update, replace, insertMany, updateMany, delete, cursor, aggregation |
+| Article Model | 10 | `findByTitle`, `findByAuthor`, `getSummary`, timestamps, validation |
+| User | 16 | model, `comparePassword`, `getPublicProfile`, `findByEmail`, validation, `register`, `authenticate` |
 
 ### Cursors
 - `GET /articles/stream` iterates documents using a MongoDB cursor (`Model.find().cursor()`) with `for await...of` instead of loading everything into memory
-- Suitable for large collections
 
 ### Aggregation
 - `GET /articles/stats` runs a multi-stage aggregation pipeline returning total articles, unique authors, average content length, and per-author breakdown sorted by article count
@@ -128,6 +135,47 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 
 ---
 
+## Models
+
+### Article
+
+| Field | Type | Validation |
+|---|---|---|
+| `title` | String | required, trim, minlength 3, maxlength 200 |
+| `author` | String | required, trim, minlength 2, maxlength 100 |
+| `date` | String | required |
+| `content` | String | required, minlength 10 |
+
+**Indexes:** `{ title: "text" }`, `{ author: 1 }`, `{ date: -1 }`
+
+**Static methods:**
+- `findByTitle(searchTerm)` — case-insensitive title search
+- `findByAuthor(author)` — case-insensitive author search
+- `findByFieldCaseInsensitive(field, value)` — shared base for both above
+
+**Instance methods:**
+- `getSummary()` — returns `{ _id, title, author, date, contentPreview, createdAt, updatedAt }`
+
+---
+
+### User
+
+| Field | Type | Validation |
+|---|---|---|
+| `email` | String | required, unique, lowercase, trim, regex format |
+| `password` | String | required, minlength 6, `select: false` |
+
+**Pre-save hook:** hashes password with bcrypt before saving (only when modified).
+
+**Static methods:**
+- `findByEmail(email)` — finds by email, normalises to lowercase
+
+**Instance methods:**
+- `comparePassword(candidate)` — bcrypt comparison
+- `getPublicProfile()` — returns `{ id, email, createdAt, updatedAt }` without password
+
+---
+
 ## Middlewares
 
 | Middleware                    | Description                                                        |
@@ -142,17 +190,17 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?r
 | `validateFields(fields[])`    | Factory — validates required fields in request body, returns 400   |
 | `asyncHandler(fn)`            | Wraps async route handlers, forwards errors to `handleError`       |
 | `notFound`                    | 404 handler — renders `404.pug`                                    |
-| `handleError`                 | Central error handler — 400 for ValidationError, 500 otherwise; GET requests render `error.ejs`, all others return JSON |
+| `handleError`                 | Central error handler — handles `ValidationError` (400 + field details), `CastError` (400), duplicate key `11000` (409), custom `err.status`; GET requests render `error.ejs`, all others return JSON |
 
 ---
 
 ## Services
 
-| Service          | Exports                                                          | Description                                            |
-|------------------|------------------------------------------------------------------|--------------------------------------------------------|
-| `userService`    | `findByEmail`, `findById`, `createUser`, `registerUser`          | User lookup, creation, and registration with duplicate check |
-| `tokenService`   | `signToken`, `verifyToken`, `setTokenCookie`, `clearTokenCookie` | All JWT operations in one place                        |
-| `articleService` | `buildRegexFilter`, `buildSearchFilter`, `getStats`              | Reusable query helpers and aggregation pipeline        |
+| Service          | Exports                                                                   | Description                                                      |
+|------------------|---------------------------------------------------------------------------|------------------------------------------------------------------|
+| `userService`    | `findByEmail`, `findById`, `create`, `register`, `authenticate`           | User lookup, creation, registration with duplicate check, and credential verification |
+| `tokenService`   | `signToken`, `verifyToken`, `setTokenCookie`, `clearTokenCookie`          | All JWT operations in one place                                  |
+| `articleService` | `buildRegexFilter`, `buildSearchFilter`, `getStats`, `getAll`, `getById`, `create`, `createMany`, `updateById`, `replaceById`, `updateMany`, `deleteById`, `deleteMany`, `stream` | Full CRUD abstraction layer + query helpers + aggregation |
 
 ---
 
@@ -287,7 +335,7 @@ ExpressHillel/
 │   └── favicon.ico
 ├── src/
 │   ├── app.js
-│   ├── config.js
+│   ├── config.js                      # constants: JWT, session, theme, VALIDATION_RULES, ERROR_MESSAGES
 │   ├── db.js                          # connectDB + isDbConnected
 │   ├── passportConfig.js
 │   ├── sessionConfig.js
@@ -301,13 +349,13 @@ ExpressHillel/
 │   ├── data/
 │   │   ├── authors.js
 │   │   ├── seed.js
-│   │   ├── studentDB.mongosh.js           # mongosh script: CRUD, aggregation, indexes on studentDB
-│   │   ├── studentDB.json                 # final state of assignments collection after script run
-│   │   └── studentDB.output.txt           # console output from the last script execution
+│   │   ├── studentDB.mongosh.js
+│   │   ├── studentDB.json
+│   │   └── studentDB.output.txt
 │   ├── middlewares/
 │   │   ├── index.js
-│   │   ├── asyncHandler.js            # wraps async handlers, forwards errors
-│   │   ├── dbCheckMiddleware.js       # 503 if MongoDB not connected
+│   │   ├── asyncHandler.js
+│   │   ├── dbCheckMiddleware.js
 │   │   ├── errorHandlers.js           # notFound, handleError, notFoundError
 │   │   ├── passportMiddleware.js
 │   │   ├── jwtMiddleware.js
@@ -315,10 +363,10 @@ ExpressHillel/
 │   │   ├── currentUserFromJWTMiddleware.js
 │   │   ├── themeMiddleware.js
 │   │   ├── logRequestsMiddleware.js
-│   │   └── validateMiddleware.js      # validateFields(fields[]) factory
+│   │   └── validateMiddleware.js
 │   ├── models/
-│   │   ├── Article.js
-│   │   └── User.js
+│   │   ├── Article.js                 # schema, validation, indexes, static + instance methods
+│   │   └── User.js                    # schema, validation, pre-save hash, static + instance methods
 │   ├── routes/
 │   │   ├── index.js
 │   │   ├── authRoutes.js
@@ -327,11 +375,14 @@ ExpressHillel/
 │   │   ├── authorsRoutes.js
 │   │   └── articlesRoutes.js
 │   ├── services/
-│   │   ├── articleService.js          # buildRegexFilter, buildSearchFilter, getStats (aggregation)
+│   │   ├── articleService.js          # CRUD layer + buildRegexFilter + getStats
 │   │   ├── tokenService.js            # signToken, verifyToken, setTokenCookie, clearTokenCookie
-│   │   └── userService.js             # findByEmail, createUser, registerUser
+│   │   └── userService.js             # findByEmail, findById, create, register, authenticate
 │   ├── tests/
-│   │   └── runTests.js                # 14 tests: CRUD + cursor + aggregation
+│   │   ├── runTests.js                # orchestrator: runs all suites, collects results
+│   │   ├── article.crud.js            # 13 tests: CRUD + cursor + aggregation
+│   │   ├── article.model.js           # 10 tests: static methods, instance methods, timestamps, validation
+│   │   └── user.js                    # 16 tests: User model + userService
 │   └── views/
 │       ├── root/index.pug
 │       ├── authors/

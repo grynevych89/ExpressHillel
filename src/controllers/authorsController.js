@@ -6,7 +6,7 @@ const getAuthors = (req, res) => {
 };
 
 const createAuthor = (req, res) => {
-  res.send('Post authors route');
+  res.status(501).json({ error: 'Not implemented' });
 };
 
 const getAuthorById = (req, res) => {
@@ -16,11 +16,11 @@ const getAuthorById = (req, res) => {
 };
 
 const updateAuthor = (req, res) => {
-  res.send(`Put author by Id route: ${req.params.authorId}`);
+  res.status(501).json({ error: 'Not implemented' });
 };
 
 const deleteAuthor = (req, res) => {
-  res.send(`Delete author by Id route: ${req.params.authorId}`);
+  res.status(501).json({ error: 'Not implemented' });
 };
 
 export { getAuthors, createAuthor, getAuthorById, updateAuthor, deleteAuthor };
